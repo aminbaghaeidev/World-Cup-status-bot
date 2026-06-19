@@ -1,0 +1,18 @@
+FLAGS = {
+    "Mexico":"🇲🇽","South Africa":"🇿🇦","South Korea":"🇰🇷",
+    "Korea Republic":"🇰🇷","Czech Republic":"🇨🇿", "IR Iran":"🇮🇷",
+    "Canada":"🇨🇦","Switzerland":"🇨🇭","Qatar":"🇶🇦",
+    "Brazil":"🇧🇷","Morocco":"🇲🇦","Haiti":"🇭🇹","Scotland":"🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    "United States":"🇺🇸","Paraguay":"🇵🇾","Australia":"🇦🇺",
+    "Germany":"🇩🇪","Curaçao":"🇨🇼","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨",
+    "Netherlands":"🇳🇱","Japan":"🇯🇵","Tunisia":"🇹🇳",
+    "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
+    "Spain":"🇪🇸","Cape Verde":"🇨🇻", "Cabo Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+    "France":"🇫🇷","Senegal":"🇸🇳","Norway":"🇳🇴",
+    "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
+    "Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿",
+    "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
+    "DR Congo":"🇨🇩","Congo DR":"🇨🇩",
+    "Bosnia and Herzegovina":"🇧🇦","Czechia":"🇨🇿",
+    "Turkey":"🇹🇷","Sweden":"🇸🇪","Iraq":"🇮🇶",
+}
