@@ -173,8 +173,9 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     save_subscribers()
 
     await update.message.reply_text("""✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.
-                                    @theComputer :چنل ما
+                                    @theComputerphile :چنل ما
 
+                                    
                                     /stop :برای لغو عضویت""")
 
     games = await asyncio.to_thread(get_all_games)
