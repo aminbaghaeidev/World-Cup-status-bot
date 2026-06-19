@@ -173,7 +173,7 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     save_subscribers()
 
     await update.message.reply_text("""✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.
-    @theComputerphile :چنل من
+                                                                   @theComputerphile :چنل من
 
                                     
                                     /stop :برای لغو عضویت""")
