@@ -1,6 +1,5 @@
 """
 A telegram bot that provides world cup status update.
-API: worldcup26.ir
 """
 
 import asyncio
@@ -8,7 +7,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 import requests
@@ -23,7 +22,8 @@ load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-BASE_URL      = "https://worldcup26.ir"
+FOOTBALL_API_KEY = os.getenv("FB_API_KEY")
+BASE_URL = https://api.football-data.org/v4
 POLL_INTERVAL = 60 # 1 minute
 
 SUBSCRIBERS_FILE = Path("subscribers.json")
@@ -54,53 +54,60 @@ def score_line(home: str, away: str, hg: int, ag: int) -> str:
 
 # API
 def get_all_games() -> list[dict]:
+    headers = {"X-Auth-Token": FOOTBALL_API_KEY}
+    url = f"{BASE_URL}/competitions/2000/matches"
+    
     for attempt in range(3):
         try:
-            r = requests.get(f"{BASE_URL}/get/games", timeout=10)
+            r = requests.get(url, headers=headers, timeout=10)
             r.raise_for_status()
-            return r.json().get("games", [])
+            return r.json().get("matches", [])
         except Exception as e:
-            log.error("تلاش %d خطا: %s", attempt + 1, e)
+            log.error("error %d: %s", attempt + 1, e)
             if attempt < 2:
                 time.sleep(3)
     return []
 
 
 def parse_game(g: dict) -> dict:
+    status = g.get("status", "")
+    score = g.get("score", {}).get("fullTime", {})
+
+    home = g.get("homeTeam", {}).get("name", "نامشخص")
+    away = g.get("awayTeam", {}).get("name", "نامشخص")
+
+    hg = score.get("home") if score.get("home") is not None else 0
+    ag = score.get("away") if score.get("away") is not None else 0
+
+    live = status in ["IN_PLAY", "PAUSED"]
+    finished = status == "FINISHED"
+    
     return {
-        "id":       str(g.get("id", g.get("_id", ""))),
-        "home":     g.get("home_team_name_en", ""),
-        "away":     g.get("away_team_name_en", ""),
-        "hg":       int(g.get("home_score") or 0) if str(g.get("home_score", "0") or "0").lower() not in ("null", "none", "") else 0,
-        "ag":       int(g.get("away_score") or 0) if str(g.get("away_score", "0") or "0").lower() not in ("null", "none", "") else 0,
-        "finished": str(g.get("finished", "")).upper() == "TRUE",
-        "live": str(g.get("time_elapsed", "")).lower() not in ("", "finished", "null", "none", "notstarted"),
-        "date":     g.get("local_date", ""),
-        "elapsed":  g.get("time_elapsed", ""),
+        "id": str(g.get("id", "")),
+        "home": home,
+        "away": away,
+        "hg": hg,
+        "ag": ag,
+        "finished": finished,
+        "live": live,
+        "date": g.get("utcDate", ""),
+        "elapsed": "Live" if live else status,
     }
 
 
 def is_today(date_str: str) -> bool:
     if not date_str:
         return False
-
-    today = datetime.now()
-    formats = [
-        "%m/%d/%Y %H:%M",
-        "%d/%m/%Y %H:%M",
-        "%Y/%m/%d %H:%M",
-        "%Y-%m-%d %H:%M",
-    ]
+    try:
+        dt_utc = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
+        dt_ir = dt_utc + timedelta(hours=3, minutes=30)
     
-    for fmt in formats:
-        try:
-            dt = datetime.strptime(date_str, fmt)
-            return dt.year == today.year and dt.month == today.month and dt.day == today.day
-        except ValueError:
-            continue
-
-    log.error("Unknown date format received from API: '%s'", date_str)
-    return False
+        now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+        now_ir = now_utc + timedelta(hours=3, minutes=30)
+        
+        return dt_ir.date() == now_ir.date()
+    except ValueError:
+        return False
 
 
 async def broadcast(app: Application, text: str):
@@ -143,19 +150,24 @@ async def process_games(app: Application, games: list[dict]):
 
 
 def build_schedule(games: list[dict]) -> str:
-    todays = [parse_game(g) for g in games if is_today(g.get("local_date", ""))]
+    todays = [parse_game(g) for g in games if is_today(g.get("utcDate", g.get("date", "")))]
 
     if not todays:
-        return "..."
+        return "بازی‌ای برای امروز ثبت نشده..."
 
     lines = ["📅 بازی‌های امروز جام جهانی ۲۰۲۶:\n"]
     for g in todays:
         if g["finished"]:
             lines.append(f"✅ {score_line(g['home'], g['away'], g['hg'], g['ag'])}")
         elif g["live"]:
-            lines.append(f"🔴 ({g['elapsed']}'): {score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            lines.append(f"🔴 (Live): {score_line(g['home'], g['away'], g['hg'], g['ag'])}")
         else:
-            t = g["date"][11:16] if len(g["date"]) > 11 else ""
+            try:
+                dt_utc = datetime.strptime(g["date"], "%Y-%m-%dT%H:%M:%SZ")
+                dt_ir = dt_utc + timedelta(hours=3, minutes=30)
+                t = dt_ir.strftime("%H:%M")
+            except:
+                t = "??"
             lines.append(f"🕐 {t}  {flag(g['home'])} {g['home']} vs {g['away']} {flag(g['away'])}")
     return "\n".join(lines)
 
