@@ -7,7 +7,7 @@ FLAGS = {
     "Germany":"🇩🇪","Curaçao":"🇨🇼","Ivory Coast":"🇨🇮","Ecuador":"🇪🇨",
     "Netherlands":"🇳🇱","Japan":"🇯🇵","Tunisia":"🇹🇳",
     "Belgium":"🇧🇪","Egypt":"🇪🇬","Iran":"🇮🇷","New Zealand":"🇳🇿",
-    "Spain":"🇪🇸","Cape Verde":"🇨🇻", "Cabo Verde":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
+    "Spain":"🇪🇸","Cape Verde Islands":"🇨🇻","Saudi Arabia":"🇸🇦","Uruguay":"🇺🇾",
     "France":"🇫🇷","Senegal":"🇸🇳","Norway":"🇳🇴",
     "Argentina":"🇦🇷","Algeria":"🇩🇿","Austria":"🇦🇹","Jordan":"🇯🇴",
     "Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿",
