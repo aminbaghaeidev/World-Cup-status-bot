@@ -23,7 +23,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 BASE_URL      = "https://worldcup26.ir"
-POLL_INTERVAL = 300 # 5 minute
+POLL_INTERVAL = 60 # 1 minute
 
 SUBSCRIBERS_FILE = Path("subscribers.json")
 
@@ -53,13 +53,16 @@ def score_line(home: str, away: str, hg: int, ag: int) -> str:
 
 # API
 def get_all_games() -> list[dict]:
-    try:
-        r = requests.get(f"{BASE_URL}/get/games", timeout=15)
-        r.raise_for_status()
-        return r.json().get("games", [])
-    except Exception as e:
-        log.error("Error %s", e)
-        return []
+    for attempt in range(3):
+        try:
+            r = requests.get(f"{BASE_URL}/get/games", timeout=10)
+            r.raise_for_status()
+            return r.json().get("games", [])
+        except Exception as e:
+            log.error("تلاش %d خطا: %s", attempt + 1, e)
+            if attempt < 2:
+                time.sleep(3)
+    return []
 
 
 def parse_game(g: dict) -> dict:
@@ -70,7 +73,7 @@ def parse_game(g: dict) -> dict:
         "hg":       int(g.get("home_score") or 0) if str(g.get("home_score", "0") or "0").lower() not in ("null", "none", "") else 0,
         "ag":       int(g.get("away_score") or 0) if str(g.get("away_score", "0") or "0").lower() not in ("null", "none", "") else 0,
         "finished": str(g.get("finished", "")).upper() == "TRUE",
-        "live":     str(g.get("time_elapsed", "")).lower() not in ("", "finished", "null", "none"),
+        "live": str(g.get("time_elapsed", "")).lower() not in ("", "finished", "null", "none", "notstarted"),
         "date":     g.get("local_date", ""),
         "elapsed":  g.get("time_elapsed", ""),
     }
