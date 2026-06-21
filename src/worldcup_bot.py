@@ -23,7 +23,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 BASE_URL      = "https://worldcup26.ir"
-POLL_INTERVAL = 60 # 1 minute
+POLL_INTERVAL = 300 # 5 minute
 
 SUBSCRIBERS_FILE = Path("subscribers.json")
 
