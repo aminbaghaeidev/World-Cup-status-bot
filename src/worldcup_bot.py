@@ -171,7 +171,7 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     subscribers.add(chat_id)
     save_subscribers()
-
+    log.info("کاربر جدید /start زد | chat_id: %s | جمع مشترکین: %d", chat_id, len(subscribers))
     await update.message.reply_text("""✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.
                                                                    @theComputerphile :چنل من
 
