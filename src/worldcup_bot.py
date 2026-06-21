@@ -26,7 +26,10 @@ FOOTBALL_API_KEY = os.getenv("FB_API_KEY")
 BASE_URL = "https://api.football-data.org/v4"
 POLL_INTERVAL = 60 # 1 minute
 
-SUBSCRIBERS_FILE = Path("subscribers.json")
+if os.path.exists("/app/data"):
+    SUBSCRIBERS_FILE = Path("/app/data/subscribers.json")
+else:
+    SUBSCRIBERS_FILE = Path("subscribers.json")
 
 logging.basicConfig(
     level=logging.INFO,
