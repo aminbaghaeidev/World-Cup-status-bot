@@ -23,7 +23,7 @@ load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 FOOTBALL_API_KEY = os.getenv("FB_API_KEY")
-BASE_URL = https://api.football-data.org/v4
+BASE_URL = "https://api.football-data.org/v4"
 POLL_INTERVAL = 60 # 1 minute
 
 SUBSCRIBERS_FILE = Path("subscribers.json")
