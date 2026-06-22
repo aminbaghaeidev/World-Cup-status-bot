@@ -76,7 +76,9 @@ def parse_game(g: dict) -> dict:
     status = g.get("status", "")
 
     score = g.get("score", {})
-    full_time = score.get("fullTime") or {}
+    full_time = score.get("fullTime")
+    if not full_time:
+        full_time = score.get("regularTime") or {}
 
     home = g.get("homeTeam", {}).get("name", "نامشخص")
     away = g.get("awayTeam", {}).get("name", "نامشخص")
@@ -98,6 +100,7 @@ def parse_game(g: dict) -> dict:
         "date": g.get("utcDate", ""),
         "elapsed": "Live" if live else status,
     }
+
 
 
 
@@ -129,10 +132,12 @@ async def process_games(app: Application, games: list[dict]):
         g = parse_game(raw)
         gid = g["id"]
 
-
         if not gid or g["home"] == "نامشخص" or g["away"] == "نامشخص":
             continue
-            
+    
+        if not is_today(g["date"]):
+            continue
+
         if not g["live"] and not g["finished"]:
             continue
 
@@ -148,6 +153,10 @@ async def process_games(app: Application, games: list[dict]):
             continue
 
         if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
+            
+            if g["hg"] == 0 and g["ag"] == 0 and (prev["hg"] > 0 or prev["ag"] > 0):
+                continue 
+
             log.info("گل! %s %d-%d %s", g["home"], g["hg"], g["ag"], g["away"])
             await broadcast(app, score_line(g["home"], g["away"], g["hg"], g["ag"]))
 
@@ -156,6 +165,7 @@ async def process_games(app: Application, games: list[dict]):
             await broadcast(app, f"Game is over, final result:\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
 
         tracked[gid] = g
+
 
 
 def build_schedule(games: list[dict]) -> str:
