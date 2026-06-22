@@ -74,13 +74,15 @@ def get_all_games() -> list[dict]:
 
 def parse_game(g: dict) -> dict:
     status = g.get("status", "")
-    score = g.get("score", {}).get("fullTime", {})
+
+    score = g.get("score", {})
+    full_time = score.get("fullTime") or {}
 
     home = g.get("homeTeam", {}).get("name", "نامشخص")
     away = g.get("awayTeam", {}).get("name", "نامشخص")
 
-    hg = score.get("home") if score.get("home") is not None else 0
-    ag = score.get("away") if score.get("away") is not None else 0
+    hg = full_time.get("home") if full_time.get("home") is not None else 0
+    ag = full_time.get("away") if full_time.get("away") is not None else 0
 
     live = status in ["IN_PLAY", "PAUSED"]
     finished = status == "FINISHED"
@@ -96,6 +98,7 @@ def parse_game(g: dict) -> dict:
         "date": g.get("utcDate", ""),
         "elapsed": "Live" if live else status,
     }
+
 
 
 def is_today(date_str: str) -> bool:
@@ -125,8 +128,11 @@ async def process_games(app: Application, games: list[dict]):
     for raw in games:
         g = parse_game(raw)
         gid = g["id"]
-        if not gid:
+
+
+        if not gid or g["home"] == "نامشخص" or g["away"] == "نامشخص":
             continue
+            
         if not g["live"] and not g["finished"]:
             continue
 
@@ -153,7 +159,12 @@ async def process_games(app: Application, games: list[dict]):
 
 
 def build_schedule(games: list[dict]) -> str:
-    todays = [parse_game(g) for g in games if is_today(g.get("utcDate", g.get("date", "")))]
+    todays = []
+    for g in games:
+        if is_today(g.get("utcDate", g.get("date", ""))):
+            parsed = parse_game(g)
+            if parsed["home"] != "نامشخص" and parsed["away"] != "نامشخص":
+                todays.append(parsed)
 
     if not todays:
         return "بازی‌ای برای امروز ثبت نشده..."
