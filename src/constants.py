@@ -13,6 +13,6 @@ FLAGS = {
     "Portugal":"🇵🇹","Colombia":"🇨🇴","Uzbekistan":"🇺🇿",
     "England":"🏴󠁧󠁢󠁥󠁮󠁧󠁿","Croatia":"🇭🇷","Ghana":"🇬🇭","Panama":"🇵🇦",
     "DR Congo":"🇨🇩","Congo DR":"🇨🇩",
-    "Bosnia and Herzegovina":"🇧🇦","Czechia":"🇨🇿",
+    "Bosnia-Herzegovina":"🇧🇦","Czechia":"🇨🇿",
     "Turkey":"🇹🇷","Sweden":"🇸🇪","Iraq":"🇮🇶",
 }
