@@ -173,7 +173,7 @@ async def process_games(app: Application, games: list[dict]):
 
         if not prev["finished"] and g["finished"]:
             log.info("بازی %s تموم شد", gid)
-            await broadcast(app, f"Game is over, final result:\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            await broadcast(app, f"بازی تمام شد‼️\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
 
         tracked[gid] = g
         save_tracked()
