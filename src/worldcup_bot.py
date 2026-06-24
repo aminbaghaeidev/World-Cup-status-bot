@@ -31,6 +31,11 @@ if os.path.exists("/app/data"):
 else:
     SUBSCRIBERS_FILE = Path("subscribers.json")
 
+if os.path.exists("/app/data"):
+    TRACKED_FILE = Path("/app/data/tracked.json")
+else:
+    TRACKED_FILE = Path("tracked.json")
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s  %(levelname)s  %(message)s",
@@ -44,7 +49,10 @@ def save_subscribers():
     SUBSCRIBERS_FILE.write_text(json.dumps(list(subscribers)))
 
 
-tracked: dict[str, dict] = {}
+def save_tracked():
+    TRACKED_FILE.write_text(json.dumps(tracked))
+
+tracked: dict[str, dict] = json.loads(TRACKED_FILE.read_text()) if TRACKED_FILE.exists() else {}
 
 
 def flag(name: str) -> str:
@@ -146,10 +154,13 @@ async def process_games(app: Application, games: list[dict]):
                  g["live"], g["finished"], g["elapsed"])
 
         prev = tracked.get(gid)
-
+        
         if prev is None:
             tracked[gid] = g
+            save_tracked()
             log.info("بازی %s اولین بار دیده شد", gid)
+            if g["live"] and (g["hg"] > 0 or g["ag"] > 0):
+                await broadcast(app, f"🔴 بازی شروع شده:\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
             continue
 
         if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
@@ -158,13 +169,14 @@ async def process_games(app: Application, games: list[dict]):
                 continue 
 
             log.info("گل! %s %d-%d %s", g["home"], g["hg"], g["ag"], g["away"])
-            await broadcast(app, score_line(g["home"], g["away"], g["hg"], g["ag"]))
+            await broadcast(app, f"⚽Goal!\n{g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']}")
 
         if not prev["finished"] and g["finished"]:
             log.info("بازی %s تموم شد", gid)
             await broadcast(app, f"Game is over, final result:\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
 
         tracked[gid] = g
+        save_tracked()
 
 
 
