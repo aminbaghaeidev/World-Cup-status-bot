@@ -160,7 +160,7 @@ async def process_games(app: Application, games: list[dict]):
             save_tracked()
             log.info("بازی %s اولین بار دیده شد", gid)
             if g["live"] and (g["hg"] > 0 or g["ag"] > 0):
-                await broadcast(app, f"🔴 بازی شروع شده:\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+                await broadcast(app, f"🔴 The match has started.\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
             continue
 
         if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
@@ -173,7 +173,7 @@ async def process_games(app: Application, games: list[dict]):
 
         if not prev["finished"] and g["finished"]:
             log.info("بازی %s تموم شد", gid)
-            await broadcast(app, f"بازی تمام شد‼️\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            await broadcast(app, f"Match is over, final result:\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
 
         tracked[gid] = g
         save_tracked()
@@ -221,8 +221,12 @@ async def poll_loop(app: Application):
 
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
+    username = update.effective_chat.username or "ندارد"
+    first_name = update.effective_chat.first_name or ""
+    
     subscribers.add(chat_id)
     save_subscribers()
+    log.info("کاربر جدید | id: %s | اسم: %s | @%s", chat_id, first_name, username)
     log.info("کاربر جدید /start زد | chat_id: %s | جمع مشترکین: %d", chat_id, len(subscribers))
     await update.message.reply_text("""✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.
                                                                    @theComputerphile :چنل من
