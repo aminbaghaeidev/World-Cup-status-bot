@@ -45,6 +45,8 @@ log = logging.getLogger(__name__)
 
 subscribers: set[int] = set(json.loads(SUBSCRIBERS_FILE.read_text())) if SUBSCRIBERS_FILE.exists() else set()
 
+cached_games: list[dict] = []
+
 def save_subscribers():
     SUBSCRIBERS_FILE.write_text(json.dumps(list(subscribers)))
 
@@ -135,6 +137,10 @@ async def broadcast(app: Application, text: str):
         except Exception as e:
             log.warning("Error%s: %s", chat_id, e)
 
+            if "bot was blocked" in str(e).lower() or "chat not found" in str(e).lower():
+                subscribers.discard(chat_id)
+                save_subscribers()
+
 
 async def process_games(app: Application, games: list[dict]):
     for raw in games:
@@ -211,14 +217,23 @@ def build_schedule(games: list[dict]) -> str:
 
 
 async def poll_loop(app: Application):
+    global cached_games
     while True:
         games = await asyncio.to_thread(get_all_games)
         
         log.info("%d game recieved", len(games))
         if games:
+            cached_games = games
             await process_games(app, games)
             
         await asyncio.sleep(POLL_INTERVAL)
+
+
+async def daily_schedule_job(ctx: ContextTypes.DEFAULT_TYPE):
+    log.info("در حال ارسال برنامه خودکار روزانه...")
+    if cached_games:
+        schedule = build_schedule(cached_games)
+        await broadcast(ctx.application, schedule)
 
 
 async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -230,14 +245,15 @@ async def start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     save_subscribers()
     log.info("کاربر جدید | id: %s | اسم: %s | @%s", chat_id, first_name, username)
     log.info("کاربر جدید /start زد | chat_id: %s | جمع مشترکین: %d", chat_id, len(subscribers))
-    await update.message.reply_text("""✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.
-                                                                   @theComputerphile :چنل من
+    await update.message.reply_text("✅ عضو شدی! نتایج زنده جام جهانی ۲۰۲۶ رو برات میفرستم.\n"
+        "@theComputerphile :چنل من\n\n"
+        "/stop :برای لغو عضویت")
 
-                                    
-                                    /stop :برای لغو عضویت""")
-
-    games = await asyncio.to_thread(get_all_games)
-    schedule = build_schedule(games)
+    if cached_games:
+        schedule = build_schedule(cached_games)
+    else:
+        schedule = "در حال دریافت اطلاعات بازی‌ها... لطفاً چند لحظه دیگر دوباره امتحان کنید."
+    
     await update.message.reply_text(schedule)
 
 
@@ -247,8 +263,12 @@ async def stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("❌ عضویتت لغو شد.")
 
 async def post_init(app: Application):
-    asyncio.create_task(poll_loop(app))
 
+    asyncio.create_task(poll_loop(app))
+    target_time = datetime.now(timezone.utc).replace(hour=20, minute=30, second=0, microsecond=0).time()
+    if app.job_queue:
+        app.job_queue.run_daily(daily_schedule_job, time=target_time)
+        log.info("تسک ارسال روزانه با موفقیت برای ساعت ۰۰:۰۰ ایران تنظیم شد.")
 
 if __name__ == "__main__":
     app = (
