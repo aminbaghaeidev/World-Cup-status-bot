@@ -94,7 +94,8 @@ def parse_game(g: dict) -> dict:
     hg = full_time.get("home") if full_time.get("home") is not None else 0
     ag = full_time.get("away") if full_time.get("away") is not None else 0
 
-    live = status in ["IN_PLAY", "PAUSED"]
+    live_statuses = ["IN_PLAY", "PAUSED", "EXTRA_TIME", "PENALTY_SHOOTOUT"]
+    live = status in live_statuses
     finished = status == "FINISHED"
     
     return {
@@ -143,7 +144,7 @@ async def process_games(app: Application, games: list[dict]):
         if not gid or g["home"] == "نامشخص" or g["away"] == "نامشخص":
             continue
     
-        if not is_today(g["date"]):
+        if not is_today(g["date"]) and not g["live"]:
             continue
 
         if not g["live"] and not g["finished"]:
@@ -183,8 +184,9 @@ async def process_games(app: Application, games: list[dict]):
 def build_schedule(games: list[dict]) -> str:
     todays = []
     for g in games:
-        if is_today(g.get("utcDate", g.get("date", ""))):
-            parsed = parse_game(g)
+        parsed = parse_game(g)
+
+        if is_today(g.get("utcDate", g.get("date", ""))) or parsed["live"]:
             if parsed["home"] != "نامشخص" and parsed["away"] != "نامشخص":
                 todays.append(parsed)
 
