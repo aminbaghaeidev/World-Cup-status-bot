@@ -175,7 +175,8 @@ async def process_games(app: Application, games: list[dict]):
             if g["hg"] == 0 and g["ag"] == 0 and (prev["hg"] > 0 or prev["ag"] > 0):
                 continue 
 
-            log.info("گل! %s %d-%d %s", g["home"], g["hg"], g["ag"], g["away"])
+        if not prev["finished"]:
+            log.info("Goal! %d-%d %s", g["home"], g["hg"], g["ag"] ,g["away"])
             await broadcast(app, f"⚽Goal!\n{g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']}")
 
         if not prev["finished"] and g["finished"]:
