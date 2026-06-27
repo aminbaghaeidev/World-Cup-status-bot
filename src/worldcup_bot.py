@@ -7,7 +7,7 @@ import json
 import logging
 import os
 import time
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, time as dt_time
 from pathlib import Path
 
 import requests
@@ -170,14 +170,13 @@ async def process_games(app: Application, games: list[dict]):
                 await broadcast(app, f"🔴 The match has started.\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
             continue
 
-        if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
-            
-            if g["hg"] == 0 and g["ag"] == 0 and (prev["hg"] > 0 or prev["ag"] > 0):
-                continue 
+        if prev["finished"]:
+            continue
 
-        if not prev["finished"]:
-            log.info("Goal! %d-%d %s", g["home"], g["hg"], g["ag"] ,g["away"])
-            await broadcast(app, f"⚽Goal!\n{g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']}")
+        if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
+            if not (g["hg"] == 0 and g["ag"] == 0 and (prev["hg"] > 0 or prev["ag"] > 0)):
+                log.info("Goal! %s %d-%d %s", g["home"], g["hg"], g["ag"], g["away"])
+                await broadcast(app, f"⚽Goal!\n{g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']}")
 
         if not prev["finished"] and g["finished"]:
             log.info("بازی %s تموم شد", gid)
@@ -185,7 +184,6 @@ async def process_games(app: Application, games: list[dict]):
 
         tracked[gid] = g
         save_tracked()
-
 
 
 def build_schedule(games: list[dict]) -> str:
@@ -266,9 +264,11 @@ async def stop(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def post_init(app: Application):
 
     asyncio.create_task(poll_loop(app))
-    target_time = datetime.now(timezone.utc).replace(hour=20, minute=30, second=0, microsecond=0).time()
     if app.job_queue:
-        app.job_queue.run_daily(daily_schedule_job, time=target_time)
+        app.job_queue.run_daily(
+            daily_schedule_job,
+            time=dt_time(hour=20, minute=30, tzinfo=timezone.utc)
+        )
         log.info("تسک ارسال روزانه با موفقیت برای ساعت ۰۰:۰۰ ایران تنظیم شد.")
 
 if __name__ == "__main__":

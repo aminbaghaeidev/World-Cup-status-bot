@@ -1,1 +1,1 @@
-worker: python worldcup_bot.py
+worker: python src/worldcup_bot.py
