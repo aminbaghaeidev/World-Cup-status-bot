@@ -38,7 +38,7 @@ else:
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s  %(levelname)s  %(message)s",
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(), logging.FileHandler("bot.log", encoding="utf-8")],
 )
 log = logging.getLogger(__name__)
@@ -65,6 +65,9 @@ def score_line(home: str, away: str, hg: int, ag: int) -> str:
     return f"{flag(home)} {hg} - {ag} {flag(away)}"
 
 
+def penalty_score_line(home: str, away: str, hg: int, ag: int, ph: int, pa: int) -> str:
+    return f"{flag(home)} {hg} ({ph}) - {ag} ({pa}) {flag(away)}"
+
 # API
 def get_all_games() -> list[dict]:
     headers = {"X-Auth-Token": FOOTBALL_API_KEY}
@@ -90,6 +93,8 @@ def parse_game(g: dict) -> dict:
     if not full_time:
         full_time = score.get("regularTime") or {}
 
+    penalties = score.get("penalties") or {}
+
     home = g.get("homeTeam", {}).get("name", "نامشخص")
     away = g.get("awayTeam", {}).get("name", "نامشخص")
 
@@ -108,6 +113,9 @@ def parse_game(g: dict) -> dict:
         "ag": ag,
         "finished": finished,
         "live": live,
+        "ph": penalties.get("home"),
+        "pa": penalties.get("away"),
+        "status": status,
         "date": g.get("utcDate", ""),
         "elapsed": "Live" if live else status,
     }
@@ -170,17 +178,30 @@ async def process_games(app: Application, games: list[dict]):
                 await broadcast(app, f"🔴 The match has started.\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
             continue
 
+        prev_status = prev.get("status", "")
+        
+        if prev_status != "EXTRA_TIME" and g["status"] == "EXTRA_TIME":
+            log.info("بازی %s رفت به وقت اضافه", gid)
+            await broadcast(
+                app,
+                f"⏱ (Extra Time)!\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}"
+            )
+
         if prev["finished"]:
             continue
 
-        if g["hg"] != prev["hg"] or g["ag"] != prev["ag"]:
+        if g["status"] != "PENALTY_SHOOTOUT" and (g["hg"] != prev["hg"] or g["ag"] != prev["ag"]):
             if not (g["hg"] == 0 and g["ag"] == 0 and (prev["hg"] > 0 or prev["ag"] > 0)):
                 log.info("Goal! %s %d-%d %s", g["home"], g["hg"], g["ag"], g["away"])
-                await broadcast(app, f"⚽Goal!\n{g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']}")
+                await broadcast(app, f"⚽Goal!\n| {g['home']} {flag(g['home'])} {g['hg']} - {g['ag']} {flag(g['away'])} {g['away']} |")
 
         if not prev["finished"] and g["finished"]:
             log.info("بازی %s تموم شد", gid)
-            await broadcast(app, f"Match is over, final result:\n\n{score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            if g["ph"] is not None and g["pa"] is not None:
+                final_line = penalty_score_line(g['home'], g['away'], g['hg'], g['ag'], g['ph'], g['pa'])
+            else:
+                final_line = score_line(g['home'], g['away'], g['hg'], g['ag'])
+            await broadcast(app, f"Match is over, final result:\n\n| {final_line} |")
 
         tracked[gid] = g
         save_tracked()
@@ -201,9 +222,9 @@ def build_schedule(games: list[dict]) -> str:
     lines = ["📅 بازی‌های امروز جام جهانی ۲۰۲۶:\n"]
     for g in todays:
         if g["finished"]:
-            lines.append(f"✅ {score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            lines.append(f"✅ | {score_line(g['home'], g['away'], g['hg'], g['ag'])} |")
         elif g["live"]:
-            lines.append(f"🔴 (Live): {score_line(g['home'], g['away'], g['hg'], g['ag'])}")
+            lines.append(f"🔴 (Live): | {score_line(g['home'], g['away'], g['hg'], g['ag'])} |")
         else:
             try:
                 dt_utc = datetime.strptime(g["date"], "%Y-%m-%dT%H:%M:%SZ")
@@ -211,7 +232,7 @@ def build_schedule(games: list[dict]) -> str:
                 t = dt_ir.strftime("%H:%M")
             except:
                 t = "??"
-            lines.append(f"🕐 {t}  {flag(g['home'])} {g['home']} vs {g['away']} {flag(g['away'])}")
+            lines.append(f"🕐 {t}  | {flag(g['home'])} {g['home']} vs {g['away']} {flag(g['away'])} |")
     return "\n".join(lines)
 
 
